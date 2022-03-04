@@ -1,79 +1,87 @@
+'''
+get the df had params W M U C.'''
+
 import pandas
-import geohash.Geohash
-pathr = ''
-pathw = ''
+import bygeohash
+import structure
+
+pathr = r'c/1.xslx'
+pathw = r'c/1.xslx'
+
+# default param
+surn = 4  # find the nearest surn trees surround goaltree
+precision = 5  # geohash precision error
+pre_dis = 2
+pre_float = 2
+col_sn = ['id']  # serial number or notation of trees
+col_gps = ['lat', 'lng', 'altitude']
+# col_geo = ['geocode']
+col_W = ['x', 'y', 'z']  # uniform angle index
+col_M = ['species']  # mingling
+col_U = ['DBM']  # DBM
+col_C = ['crown']  # crown
+params_tree = [col_W, col_M, col_U, col_C]
+params_spatial = ['uniformangle', 'mingling', 'neighborhood', 'crowding']
+coordinates = ['gps', 'certesian', ' polar']
+ells = [
+    'WGS-84', 'GRS-80', 'Airy (1830)',
+    'Intl 1924', 'Clarke (1880)', 'GRS-67']
+# ellipsoids = {
+#             #model             major (km)   minor (km)     flattening
+#             'WGS-84':        (6378.137,    6356.7523142,  1 / 298.257223563),
+#             'GRS-80':        (6378.137,    6356.7523141,  1 / 298.257222101),
+#             'Airy (1830)':   (6377.563396, 6356.256909,   1 / 299.3249646),
+#             'Intl 1924':     (6378.388,    6356.911946,   1 / 297.0),
+#             'Clarke (1880)': (6378.249145, 6356.51486955, 1 / 293.465),
+#             'GRS-67':        (6378.1600,   6356.774719,   1 / 298.25),
+#             }#ELLIPSOIDS
 
 
-precisionerrordata = [[1, 2, 3, 23, 23, 2500],\
-    [2, 5, 5, 2.8, 5.6, 630],\
-    [3, 7, 8, 0.70, 0.70, 78],\
-    [4, 10, 10, 0.087, 0.18, 20],\
-    [5, 12, 13, 0.022, 0.022, 2.4],\
-    [6, 15, 15, 0.0027, 0.0055, 0.61],\
-    [7, 17, 18, 0.00068, 0.00068, 0.076],\
-    [8, 20, 20, 0.000085, 0.000172, 0.01911],\
-    [9, 22, 23, 0.000021, 0.000021, 0.00478],\
-    [10, 25, 25, 0.00000268, 0.00000536, 0.0005971],\
-    [11, 27, 28, 0.00000067, 0.00000067, 0.0001492],\
-    [12, 30, 30, 0.00000008, 0.00000017, 0.0000186],]
-precisionerror = pandas.DataFrame(precisionerrordata, columns = \
-    ['geolen','latbits' , 'lngbits', 'laterror', ' lngerror', 'kmerror'])
+# read data
+df = pandas.read_excel(pathr, names=col_sn + col_gps)  # read data
 
-def geoup():
-    pass
-def geodown():
-    pass
-def geolift():
-    pass
-def georight():
-    pass
-def neargeo(p5geo, prej):
-    p4geo = geolift(p5geo, prej)
-    p2geo = geoup(p5geo, prej)
-    p6geo = georight(p5geo, prej)
-    p8geo = geodown(p5geo, prej)
-    p1geo = geoup(p4geo, prej)
-    p3geo = geoup(p6geo, prej)
-    p7geo = geodown(p4geo, prej)
-    p9geo = geodown(p6geo, prej)
-    #neargeo = [p1geo, p2geo, p3geo, p4geo, p6geo, p7geo, p8geo, p9geo]
-    areageo = [p1geo, p2geo, p3geo, p4geo, p5geo, p6geo, p7geo, p8geo, p9geo]
-    return areageo
-def nearpoint(areageo, df, prej):
-    dfa = df.loc[:,df['geohash'].str[:prej].contains(areageo[0])]
-    for stri in range(0,len(areageo) - 1):
-        dfa = dfa.append(df.loc[:,df['geohash'].str[:prej].contains(areageo[stri + 1])])
-    return dfa
+# find the nearest srun trees in around-places
+id_g = list(df.index)
 
-#begin
-df = pandas.read_excel(pathr)
-for i in range(0, df.index):
-    p = (df.loc[i]['lat'], df.loc[i]['lng'])
-    for prei in range(5,10):
-        prej = 10 - prei + 4
-        p5geo = geohash.Geohash.encode(p)[:prej]
-        areageo = neargeo(p5geo, prej)
-        dfa = nearpoint(areageo, df, prej)
-        #paixu
-        #quchong
-        if len(dfa.index) >= 4:
-            r = precisionerrordata['laterror'] * 1500
-            listdfp = []
-            for pindex in dfa.index:
-                if pindex != i:
-                    pni = (df.at[pindex]['lat'],df.at[pindex]['lng'])
-                    pdn = geopy.distance.distance(p,pni).m
-                    if  pdn <= r:
-                        listdfp = listmin4(listdfp, pindex, pdn)                
-            if len(listdfp) >= 4:
-                for j in range(0, 4):
-                    df.at[i]['pn1id'] = listdfp[j][0]
-                    df.at[i]['pn1dis'] = listdfp[j][1]  
+# get array surround trees id and array for each distance
+arr_idsur, arr_idis = bygeohash.near(
+    df=df, id_g=id_g, id=col_sn[0], col_coord=col_gps,
+    col_code=None, surn=surn, pre=precision,
+    elld=ells[0], pre_dis=pre_dis)
 
-class nearp4:
-    def neardf():
-        return df
+# add col[id,idis]
+col_idsur = []
+col_idis = []
+for i in range(0, surn):
+    col_idsur.append('id_sur' + str(i+1))  # near points id
+    col_idis.append('idis_sur' + str(i+1))  # correspondece points distance
+df_add = pandas.DataFrame(columns=col_idsur + col_idis)
+df = pandas.concat([df, df_add])
+del df_add
 
+# add array id and distance to df
+df.loc[id_g, col_idsur] = arr_idsur
+df.loc[id_g, col_idis] = arr_idis
 
-if __name__ == '__main__':
-    df.to_excel(pathw)
+# get uniformangle
+df = structure.uniformangle_df(
+    df=df, col_idsur=col_idsur, id_g=id_g, id=col_sn[0], col_coord=col_gps,
+    coord=coordinates[0], pre_float=pre_float, elld=ells[0])
+
+# # get mingling
+# df =  spatialpp.mingling_df(
+#   df=df, col_idsur=col_idsur, id_g=id_g, id=col_sn[0],
+#   col_species=col_M[0], pre_float=pre_float)
+
+# get neighborhood
+df = structure.neighborhood_df(
+    df=df, col_idsur=col_idsur, id_g=None,
+    id=col_sn[0], col_DBM=col_U[0], pre_float=pre_float)
+
+# #get crowding
+# df = spatialpp.crowding_df(
+#   df=df, col_idsur=col_idusr, col_idis=col_idis,
+#   id_g=None, id=col_base[0], col_crown=col_C[0], pre_float=pre_float)
+
+# write df
+df.to_excel(pathw)
