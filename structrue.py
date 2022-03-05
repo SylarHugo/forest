@@ -70,11 +70,11 @@ def re_col(df, id, col_idsur, col_params, func, col_idis=None):
     n = len(col_idsur)
     for i in range(0, n):
         col_i = col_idsur[i]
-        l_idsur.append('idsur' + str(i+1))
+        l_idsur.append('id_sur' + str(i+1))
         if isinstance(col_i, str):
-            df1[l_idsur[0]] = df[col_i]
+            df1[l_idsur[i]] = df[col_i]
         elif isinstance(col_i, int):
-            df1[l_idsur[0]] = df.iloc[:, id]
+            df1[l_idsur[i]] = df.iloc[:, id]
 
     # rename(col_params)
     re_param = params_tree[params_spatial.index(func)]
@@ -181,7 +181,7 @@ def uniformangle(p0=(0, 0), arr_s=None, pre_float=pre_float):
 
 
 # mingling degree, diffrernt tree species
-def mingling(s0, l_s, pre_float=pre_float):
+def mingling(sp0, l_s, pre_float=pre_float):
     '''
     s0: goaltree species
     l_s: list[surround trees species]
@@ -189,7 +189,7 @@ def mingling(s0, l_s, pre_float=pre_float):
     M = 0
     surn = len(l_s)
     for i in range(0, surn):
-        if l_s[i] != s0:
+        if l_s[i] != sp0:
             M = M + 1
     M = round(M/surn, pre_float)
     return M
@@ -237,7 +237,7 @@ def uniformangle_df(
 
     # id_g
     if id_g is None:
-        id_g = list(df.index)
+        id_g = list(df[id])
     # id
     # col_idsurs
     surn = len(col_idsur)
@@ -291,24 +291,25 @@ def uniformangle_df(
         l_idsur = list(df.loc[p0_index, col_idsur])
         arr_s = numpy.zeros((surn, 2))
         for j in range(0, surn):
-            pn_index = df.loc[df[col_sn[0] == l_idsur[j]]].index[0]
+            sn_i = l_idsur[j]
+            pn_index = df.loc[df[col_sn[0]] == sn_i].index[0]
             arr_s[j, 0] = arr_c[pn_index, 0]
             arr_s[j, 1] = arr_c[pn_index, 1]
-        df.loc[df[col_sn[0]] == i, 'W'] = uniformangle(
+        df.at[p0_index, 'W'] = uniformangle(
             p0=p0, arr_s=arr_s, pre_float=pre_float)
-    return df
+    return df.loc[df[col_sn[0]]==id_g, 'W']
 
 
 # mingling degree, diffrernt tree species
 def mingling_df(
     df, col_idsur, id_g=None, id=col_sn[0],
-    col_species=col_M[0], pre_float=pre_float
+    col_species=col_M, pre_float=pre_float
 ):
     '''
     pass'''
     # id_g
     if id_g is None:
-        id_g = list(df.index)
+        id_g = list(df[id])
     # id
     # col_idsurs
     surn = len(col_idsur)
@@ -320,13 +321,17 @@ def mingling_df(
     del col_idis
 
     for i in id_g:
-        s0 = df.at[df[col_sn[0]] == i, col_M[0]]  # goaltree species
+        sp0_index = df.loc[df[col_sn[0]] == i].index[0]
+        sp0 = df.at[sp0_index, col_M[0]]  # goaltree species
+        l_idsur = list(df.loc[sp0_index, col_idsur])
         l_s = []
         for j in range(0, surn):
-            l_s.append(df.at[df[col_sn[0] == col_idsur[j]], col_M[0]])
-        df.at[df[col_sn[0]] == i, 'M'] = mingling(
-            s0=s0, l_s=l_s, pre_float=pre_float)
-    return df
+            sn_i = l_idsur[j]
+            spn_index = df.loc[df[col_sn[0]] == sn_i].index[0]
+            l_s.append(df.at[spn_index, col_M[0]])
+        df.at[sp0_index, 'M'] = mingling(
+            sp0=sp0, l_s=l_s, pre_float=pre_float)
+    return df.loc[df[col_sn[0]]==id_g, 'M']
 
 
 # neighborhood comparison, DBM
@@ -336,7 +341,7 @@ def neighborhood_df(
 ):
     # id_g
     if id_g is None:
-        id_g = list(df.index)
+        id_g = list(df[id])
     # id
     # col_idsurs
     surn = len(col_idsur)
@@ -348,13 +353,17 @@ def neighborhood_df(
     del col_idis
 
     for i in id_g:
-        d0 = df.at[df[col_sn[0]] == i, col_U[0]]  # goaltree DBM
+        d0_index = df.loc[df[col_sn[0]] == i].index[0]  # goal index
+        d0 = df.at[d0_index, col_U[0]]  # goaltree DBM
+        l_idsur = list(df.loc[d0_index, col_idsur])
         l_DBM = []
         for j in range(0, surn):
-            l_DBM.append(df.at[df[col_sn[0]] == col_idsur[j], col_U[0]])
-        df.at[df[col_sn[0]] == i, 'U'] = neighborhood(
+            sn_i = l_idsur[j]
+            dn_index = df.loc[df[col_sn[0]] == sn_i].index[0]
+            l_DBM.append(df.at[dn_index, col_U[0]])
+        df.at[d0_index, 'U'] = neighborhood(
             d0=d0, l_DBM=l_DBM, pre_float=pre_float)
-    return df
+    return df.loc[df[col_sn[0]]==id_g, 'U']
 
 
 # crowding degree. basal area, crown area
@@ -366,7 +375,7 @@ def crowding_df(
     pass'''
     # id_g
     if id_g is None:
-        id_g = list(df.index)
+        id_g = list(df[id])
     # id
     # col_idsurs
     surn = len(col_idsur)
@@ -377,12 +386,16 @@ def crowding_df(
     df['C'] = None
 
     for i in id_g:
-        c0 = df.at[df[col_sn[0]] == i, col_C[0]]  # goaltree c
+        c0_index = df.loc[df[col_sn[0]] == i].index[0]  # goal index
+        c0 = df.at[c0_index, col_C[0]]  # goaltree DBM
+        l_idsur = list(df.loc[c0_index, col_idsur])
         l_c = []
         l_dis = []
         for j in range(0, surn):
-            l_c.append(df.at[df[col_sn[0]] == col_idsur[j], col_C[0]])
-            l_dis.append(df.at[df[col_sn[0]] == col_idsur[j], col_idis[j]])
-        df.at[df[col_sn[0]] == i, 'C'] = crowding(
+            sn_i = l_idsur[j]
+            cn_index = df.loc[df[col_sn[0]] == sn_i].index[0]
+            l_c.append(df.at[cn_index, col_C[0]])
+            l_dis.append(df.at[cn_index, col_idis[0]])
+        df.at[c0_index, 'C'] = crowding(
             c0=c0, l_c=l_c, l_dis=l_dis, pre_float=pre_float)
-    return df
+    return df.loc[df[col_sn[0]]==id_g, 'C']
