@@ -21,9 +21,9 @@ __all__ = [
 
 import numpy
 import pandas
-import geohash.geohash as ggeo
+import geohash.Geohash as ggeo
 import geopy
-
+pathw = r'C:\Users\sylar\Desktop\2.xlsx'
 # default param
 surn = 4  # find the nearest surn trees surround goaltree
 precision = 5  # geohash precision error
@@ -109,7 +109,7 @@ def col_re(df, id=col_sn[0], col_coord=col_gps, col_code=None):
 def geoup(code, pre):
     # list(geohash code index in alphabet)
     for i in reversed(range(0, pre)):
-        strformer = code[:i]
+        strformer = code[:i+1]
         str_letter = code[i]
         strrest = code[i+1:]
         cw = numpy.argwhere(geoalp == str_letter)[0]
@@ -125,7 +125,7 @@ def geoup(code, pre):
 def geodown(code, pre):
     # list(geohash code index in alphabet)
     for i in reversed(range(0, pre)):
-        strformer = code[:i]
+        strformer = code[:i+1]
         str_letter = code[i]
         strrest = code[i+1:]
         cw = numpy.argwhere(geoalp == str_letter)[0]
@@ -141,7 +141,7 @@ def geodown(code, pre):
 def geolift(code, pre):
     # list(geohash code index in alphabet)
     for i in reversed(range(0, pre)):
-        strformer = code[:i]
+        strformer = code[:i+1]
         str_letter = code[i]
         strrest = code[i+1:]
         cw = numpy.argwhere(geoalp == str_letter)[0]
@@ -157,7 +157,7 @@ def geolift(code, pre):
 def georight(code, pre):
     # list(geohash code index in alphabet)
     for i in reversed(range(0, pre)):
-        strformer = code[:i]
+        strformer = code[:i+1]
         str_letter = code[i]
         strrest = code[i+1:]
         cw = numpy.argwhere(geoalp == str_letter)[0]
@@ -171,12 +171,12 @@ def georight(code, pre):
 
 
 # search area surround goal,return list(geohash code)
-def neargeo(p5geo, prei):
+def neargeo(p5geo, prei, rowi):
     p4geo = geolift(p5geo, prei)
     p2geo = geoup(p5geo, prei)
     p6geo = georight(p5geo, prei)
     p8geo = geodown(p5geo, prei)
-    p1geo = geoup(p4geo, prei)
+    p1geo = geoup(p4geo, prei)   
     p3geo = geoup(p6geo, prei)
     p7geo = geodown(p4geo, prei)
     p9geo = geodown(p6geo, prei)
@@ -189,7 +189,10 @@ def neargeo(p5geo, prei):
 def nearid(df, id_gi, list_9area, prei=precision):
     list_id = []
     for j in list_9area:
-        l_bool = df[col_geo[0]].str[:prei].str.contains(j)
+        if j is None:
+            continue
+        s = j[:prei]
+        l_bool = df[col_geo[0]].str[:prei].str.contains(s)
         list_id = list_id + list(df.loc[l_bool, col_sn[0]])
     set_id = set(list_id)
     set_id.discard(id_gi)
@@ -205,21 +208,21 @@ def geo_part(
     id = col_sn[0]
     row_g = df[df[id] == id_gi].index[0]  # index row where goaltree
     p = (df.at[row_g, col_gps[0]], df.at[row_g, col_gps[1]])  # point(goal)
-    list_lid = []
-    list_ldis = []
+    list_id = []
+    list_dis = []
     list_idis = []
     set_rowp = set()
-    for prei in reversed(range(0, pre)):
+    for prei in reversed(range(1, pre)):
         # return list[nine area for the center id_gi]
-        list_9area = neargeo(p5geo=df.at[row_g, col_geo[0]], prei=prei)
+        list_9area = neargeo(p5geo=df.at[row_g, col_geo[0]], prei=prei, rowi=row_g)
         # set point in areageo and drop duplicates
         set_id = nearid(df=df, id_gi=id_gi, list_9area=list_9area, prei=prei)
         len_setid = len(set_id)
 
         if len_setid >= n_sur:
-            r = df_precision.at[prei, col_preerr[3]] * 1500
-            for col_i in set_id:
-                row_p = df[df[id] == col_i].index[0]
+            r = df_precision.at[prei, col_preerr[5]] * 1500
+            for id_i in set_id:
+                row_p = df[df[id] == id_i].index[0]
                 if row_p not in set_rowp:
                     pn = (df.at[row_p, col_gps[0]], df.at[row_p, col_gps[1]])
                     dis = round(
@@ -227,14 +230,15 @@ def geo_part(
                             p, pn, ellipsoid=elld).m, pre_dis)
                     if dis <= r:
                         set_rowp.add(row_p)
-                        list_idis = list_idis + [row_p, dis]
+                        sn_i = df.at[row_p, col_sn[0]]
+                        list_idis.append([sn_i, dis])
 
-            if len(list_idis) >= n_sur:
+            if len(set_rowp) >= n_sur:
                 list_idis = sorted(list_idis, key=lambda x: x[1])
                 for i in range(0, 4):
-                    list_lid = list_idis[i][0]
-                    list_ldis = list_idis[i][1]
-                return list_lid, list_ldis
+                    list_id.append(list_idis[i][0])
+                    list_dis.append(list_idis[i][1])
+                return list_id, list_dis
 
 
 # array the nearest point id and ditance surround-goal
@@ -268,15 +272,17 @@ def near(
         for i in df.index:  # geohash.encode df.loc[lat, lng] to geocode
             df.at[i, col_geo[0]] = ggeo.encode(
                 df.at[i, col_gps[0]], df.at[i, col_gps[1]], pre)
+    # df.to_excel(pathw)
+
 
     list_lid = []  # list(list(id)) surround each goal
     list_ldis = []  # list(list(idis)) surround each goal
     for i in id_g:
         # return two list for each ig_g
-        list_lid, list_ldis = geo_part(
+        list_id, list_dis = geo_part(
             df=df, id_gi=i, n_sur=surn, pre=pre, pre_dis=pre_dis, elld=ells[0])
-        list_lid = list_lid.append(list_lid)
-        list_ldis = list_ldis.append(list_ldis)
+        list_lid.append(list_id)
+        list_ldis.append(list_dis)
     arr_idsur = numpy.array(list_lid)
     arr_dis = numpy.array(list_ldis)
     return arr_idsur, arr_dis
