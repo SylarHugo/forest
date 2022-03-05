@@ -2,11 +2,11 @@
 get the df had params W M U C.'''
 
 import pandas
-import bygeohash
+import nearbygeo
 import structure
 
-pathr = r'c/1.xslx'
-pathw = r'c/1.xslx'
+pathr = r'C:\Users\sylar\Desktop\1.xlsx'
+pathw = r'C:\Users\sylar\Desktop\2.xlsx'
 
 # default param
 surn = 4  # find the nearest surn trees surround goaltree
@@ -38,15 +38,16 @@ ells = [
 
 
 # read data
-df = pandas.read_excel(pathr, names=col_sn + col_gps)  # read data
+df = pandas.read_excel(pathr, names=col_sn + col_gps + col_M + col_U + col_C)  # read data
+original_types = df[col_sn[0]].dtypes
 
 # find the nearest srun trees in around-places
-id_g = list(df.index)
+id_g = list(df[col_sn[0]])
 
 # get array surround trees id and array for each distance
-arr_idsur, arr_idis = bygeohash.near(
+arr_idsur, arr_idis = nearbygeo.near(
     df=df, id_g=id_g, id=col_sn[0], col_coord=col_gps,
-    col_code=None, surn=surn, pre=precision,
+    col_code=None, n_sur=surn, pre=precision,
     elld=ells[0], pre_dis=pre_dis)
 
 # add col[id,idis]
@@ -57,31 +58,33 @@ for i in range(0, surn):
     col_idis.append('idis_sur' + str(i+1))  # correspondece points distance
 df_add = pandas.DataFrame(columns=col_idsur + col_idis)
 df = pandas.concat([df, df_add])
+df[col_sn[0]] = df[col_sn[0]].astype(original_types)
 del df_add
 
 # add array id and distance to df
-df.loc[id_g, col_idsur] = arr_idsur
-df.loc[id_g, col_idis] = arr_idis
+df.loc[df[col_sn[0]]==id_g, col_idsur] = arr_idsur
+df.loc[df[col_sn[0]]==id_g, col_idis] = arr_idis
 
+sn = col_sn[0] 
 # get uniformangle
-df = structure.uniformangle_df(
+df.loc[df[sn]==id_g, 'W'] = structure.uniformangle_df(
     df=df, col_idsur=col_idsur, id_g=id_g, id=col_sn[0], col_coord=col_gps,
     coord=coordinates[0], pre_float=pre_float, elld=ells[0])
 
 # # get mingling
-# df =  spatialpp.mingling_df(
-#   df=df, col_idsur=col_idsur, id_g=id_g, id=col_sn[0],
-#   col_species=col_M[0], pre_float=pre_float)
+df.loc[df[sn]==id_g, 'M'] =  structure.mingling_df(
+  df=df, col_idsur=col_idsur, id_g=id_g, id=col_sn[0],
+  col_species=col_M, pre_float=pre_float)
 
 # get neighborhood
-df = structure.neighborhood_df(
+df.loc[df[sn]==id_g, 'U'] = structure.neighborhood_df(
     df=df, col_idsur=col_idsur, id_g=None,
-    id=col_sn[0], col_DBM=col_U[0], pre_float=pre_float)
+    id=col_sn[0], col_DBM=col_U, pre_float=pre_float)
 
 # #get crowding
-# df = spatialpp.crowding_df(
-#   df=df, col_idsur=col_idusr, col_idis=col_idis,
-#   id_g=None, id=col_base[0], col_crown=col_C[0], pre_float=pre_float)
+df.loc[df[sn]==id_g, 'C'] = structure.crowding_df(
+  df=df, col_idsur=col_idsur, col_idis=col_idis,
+  id_g=None, id=col_sn[0], col_crown=col_C, pre_float=pre_float)
 
-# write df
+# # write df
 df.to_excel(pathw)
