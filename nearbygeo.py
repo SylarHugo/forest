@@ -23,10 +23,10 @@ import numpy
 import pandas
 import geohash.Geohash as ggeo
 import geopy
-pathw = r'C:\Users\sylar\Desktop\2.xlsx'
+
 # default param
 surn = 4  # find the nearest surn trees surround goaltree
-precision = 5  # geohash precision error
+precision = 12  # geohash precision error
 pre_dis = 2  # round(distance, pre_dis)
 col_sn = ['id']  # serial number or notation of trees
 col_gps = ['lat', 'lng', 'altitude']
@@ -69,10 +69,11 @@ df_precision = pandas.DataFrame(precisionerrordata, columns=col_preerr)
 
 # nparray:geohash code alphabet
 geoalp = numpy.array([
-    ['0', '1', '4', '5', 'h', 'j', 'n', 'p'],
-    ['2', '3', '6', '7', 'k', 'm', 'q', 'r'],
+    ['b', 'c', 'f', 'g', 'u', 'v', 'y', 'z'],
     ['8', '9', 'd', 'e', 's', 't', 'w', 'x'],
-    ['b', 'c', 'f', 'g', 'u', 'v', 'y', 'z']])
+    ['2', '3', '6', '7', 'k', 'm', 'q', 'r'],
+    ['0', '1', '4', '5', 'h', 'j', 'n', 'p']
+])
 
 
 # unify columns, return df
@@ -109,69 +110,86 @@ def col_re(df, id=col_sn[0], col_coord=col_gps, col_code=None):
 def geoup(code, pre):
     # list(geohash code index in alphabet)
     for i in reversed(range(0, pre)):
-        strformer = code[:i+1]
-        str_letter = code[i]
-        strrest = code[i+1:]
+        str_letter = code[i]  
         cw = numpy.argwhere(geoalp == str_letter)[0]
-        if cw[0] > 0:
-            cw[0] = cw[0] - 1
-            recode = strformer + geoalp[cw[0], cw[1]] + strrest
-            return recode
-        elif cw[0] == 0:
-            cw[0] = 3
-            code = strformer + geoalp[cw[0], cw[1]] + strrest
+        if i % 2:
+            if cw[1] == 7:
+                code = code[:i] + geoalp[cw[0], 0] + code[i+1:]
+            else:
+                code = code[:i] + geoalp[cw[0], cw[1]+1] + code[i+1:]
+                break
+        else:
+            if cw[0] == 0:
+                code = code[:i] + geoalp[3, cw[1]] + code[i+1:]
+            else:
+                code = code[:i] + geoalp[cw[0]-1, cw[1]] + code[i+1:]
+                break
+    return code
 
 
 def geodown(code, pre):
     # list(geohash code index in alphabet)
     for i in reversed(range(0, pre)):
-        strformer = code[:i+1]
-        str_letter = code[i]
-        strrest = code[i+1:]
+        str_letter = code[i]  
         cw = numpy.argwhere(geoalp == str_letter)[0]
-        if cw[0] < 3:
-            cw[0] = cw[0] - 1
-            recode = strformer + geoalp[cw[0], cw[1]] + strrest
-            return recode
-        elif cw[0] == 3:
-            cw[0] = 0
-            code = strformer + geoalp[cw[0], cw[1]] + strrest
+        if i % 2:
+            if cw[1] == 0:
+                code = code[:i] + geoalp[cw[0], 7] + code[i+1:]
+            else:
+                code = code[:i] + geoalp[cw[0], cw[1]-1] + code[i+1:]
+                break              
+        else:
+            if cw[0] == 3:
+                code = code[:i] + geoalp[0, cw[1]] + code[i+1:]
+            else:
+                code = code[:i] + geoalp[cw[0]+1, cw[1]] + code[i+1:]
+                break
+    return code
 
 
 def geolift(code, pre):
     # list(geohash code index in alphabet)
     for i in reversed(range(0, pre)):
-        strformer = code[:i+1]
-        str_letter = code[i]
-        strrest = code[i+1:]
+        str_letter = code[i] 
         cw = numpy.argwhere(geoalp == str_letter)[0]
-        if cw[1] > 0:
-            cw[1] = cw[1] - 1
-            recode = strformer + geoalp[cw[0], cw[1]] + strrest
-            return recode
-        elif cw[1] == 0:
-            cw[1] = 7
-            code = strformer + geoalp[cw[0], cw[1]] + strrest
+        if i % 2:
+            if cw[0] == 3:
+                code = code[:i] + geoalp[0, cw[1]] + code[i+1:]
+            else:
+                code = code[:i] + geoalp[cw[0]+1, cw[1]] + code[i+1:]
+                break
+        else:
+            if cw[1] == 0:
+                code = code[:i] + geoalp[cw[0], 7] + code[i+1:]
+            else:
+                code = code[:i] + geoalp[cw[0], cw[1]-1] + code[i+1:]
+                break
+    return code
 
 
 def georight(code, pre):
     # list(geohash code index in alphabet)
     for i in reversed(range(0, pre)):
-        strformer = code[:i+1]
-        str_letter = code[i]
-        strrest = code[i+1:]
+        str_letter = code[i]  
         cw = numpy.argwhere(geoalp == str_letter)[0]
-        if cw[1] < 7:
-            cw[1] = cw[1] - 1
-            recode = strformer + geoalp[cw[0], cw[1]] + strrest
-            return recode
-        elif cw[1] == 7:
-            cw[1] = 0
-            code = strformer + geoalp[cw[0], cw[1]] + strrest
+        if i % 2:
+            if cw[0] == 0:
+                code = code[:i] + geoalp[3, cw[1]] + code[i+1:]
+            else:
+                code = code[:i] + geoalp[cw[0]-1, cw[1]] + code[i+1:]
+                break
+        else:
+            
+            if cw[1] == 7:
+                code = code[:i] + geoalp[cw[0], 0] + code[i+1:]
+            else:
+                code = code[:i] + geoalp[cw[0], cw[1]+1] + code[i+1:]
+                break
+    return code
 
 
 # search area surround goal,return list(geohash code)
-def neargeo(p5geo, prei, rowi):
+def neargeo(p5geo, prei):
     p4geo = geolift(p5geo, prei)
     p2geo = geoup(p5geo, prei)
     p6geo = georight(p5geo, prei)
@@ -189,10 +207,8 @@ def neargeo(p5geo, prei, rowi):
 def nearid(df, id_gi, list_9area, prei=precision):
     list_id = []
     for j in list_9area:
-        if j is None:
-            continue
         s = j[:prei]
-        l_bool = df[col_geo[0]].str[:prei].str.contains(s)
+        l_bool = df[col_geo[0]].str.contains(s)
         list_id = list_id + list(df.loc[l_bool, col_sn[0]])
     set_id = set(list_id)
     set_id.discard(id_gi)
@@ -212,15 +228,15 @@ def geo_part(
     list_dis = []
     list_idis = []
     set_rowp = set()
-    for prei in reversed(range(1, pre)):
+    for prei in reversed(range(1, pre+1)):
         # return list[nine area for the center id_gi]
-        list_9area = neargeo(p5geo=df.at[row_g, col_geo[0]], prei=prei, rowi=row_g)
+        list_9area = neargeo(p5geo=df.at[row_g, col_geo[0]][:prei], prei=prei)
         # set point in areageo and drop duplicates
         set_id = nearid(df=df, id_gi=id_gi, list_9area=list_9area, prei=prei)
         len_setid = len(set_id)
 
         if len_setid >= n_sur:
-            r = df_precision.at[prei, col_preerr[5]] * 1500
+            r = df_precision.at[prei-1, col_preerr[5]] * 1000
             for id_i in set_id:
                 row_p = df[df[id] == id_i].index[0]
                 if row_p not in set_rowp:
@@ -285,4 +301,5 @@ def near(
         list_ldis.append(list_dis)
     arr_idsur = numpy.array(list_lid)
     arr_dis = numpy.array(list_ldis)
-    return arr_idsur, arr_dis
+    arr_geo = numpy.array(df[col_geo[0]])
+    return arr_idsur, arr_dis, arr_geo
