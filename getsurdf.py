@@ -10,12 +10,12 @@ pathw = r'C:\Users\sylar\Desktop\2.xlsx'
 
 # default param
 surn = 4  # find the nearest surn trees surround goaltree
-precision = 5  # geohash precision error
+precision = 9  # geohash precision error
 pre_dis = 2
 pre_float = 2
 col_sn = ['id']  # serial number or notation of trees
 col_gps = ['lat', 'lng', 'altitude']
-# col_geo = ['geocode']
+col_geo = ['geocode']
 col_W = ['x', 'y', 'z']  # uniform angle index
 col_M = ['species']  # mingling
 col_U = ['DBM']  # DBM
@@ -45,7 +45,7 @@ original_types = df[col_sn[0]].dtypes
 id_g = list(df[col_sn[0]])
 
 # get array surround trees id and array for each distance
-arr_idsur, arr_idis = nearbygeo.near(
+arr_idsur, arr_idis, arr_geo = nearbygeo.near(
     df=df, id_g=id_g, id=col_sn[0], col_coord=col_gps,
     col_code=None, n_sur=surn, pre=precision,
     elld=ells[0], pre_dis=pre_dis)
@@ -64,6 +64,7 @@ del df_add
 # add array id and distance to df
 df.loc[df[col_sn[0]]==id_g, col_idsur] = arr_idsur
 df.loc[df[col_sn[0]]==id_g, col_idis] = arr_idis
+df[col_geo[0]] = arr_geo
 
 sn = col_sn[0] 
 # get uniformangle
