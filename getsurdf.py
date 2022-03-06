@@ -1,4 +1,5 @@
 '''
+this code just for test data
 get the df had params W M U C.'''
 
 import pandas
