@@ -130,14 +130,14 @@ def uniformangle(p0=(0, 0), arr_s=None, pre_float=pre_float):
         if x > 0:
             if y > 0:
                 l_angle.append(
-                    round(math.atan(x / y) / math.pi * 180, pre_float))
+                    round(math.atan(y / x) / math.pi * 180, pre_float))
                 continue
             elif y == 0:
                 l_angle.append(0)
                 continue
             elif y < 0:
                 l_angle.append(
-                    360 + round(math.atan(x / y) / math.pi * 180, pre_float))
+                    360 + round(math.atan(y / x) / math.pi * 180, pre_float))
                 continue
         if x == 0:
             if y > 0:
@@ -152,14 +152,14 @@ def uniformangle(p0=(0, 0), arr_s=None, pre_float=pre_float):
         if x < 0:
             if y > 0:
                 l_angle.append(
-                    180 + round(math.atan(x / y) / math.pi * 180, pre_float))
+                    180 + round(math.atan(y / x) / math.pi * 180, pre_float))
                 continue
             elif y == 0:
                 l_angle.append(180)
                 continue
             elif y < 0:
                 l_angle.append(
-                    180 + round(math.atan(x / y) / math.pi * 180, pre_float))
+                    180 + round(math.atan(y / x) / math.pi * 180, pre_float))
                 continue
     l_angle.sort()
     W = 0
